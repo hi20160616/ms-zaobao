@@ -20,9 +20,3 @@ protoc -I "./" -I "../../../" \
     api/fetchnews/zaobao/v1/fetchnews.proto
 go mod tidy
 ```
-
-# Copy Steps
-
-1. rename bbc to zaobao
-    1.1. api
-    1.2. 

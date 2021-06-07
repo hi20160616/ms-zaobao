@@ -22,8 +22,11 @@ func fetchLinks() ([]string, error) {
 		}
 		rt = append(rt, links...)
 	}
-	rt = linksFilter(rt, `.*?/zhongwen/simp/.*-\d*`)
-	kickOutLinksMatchPath(&rt, "institutional")
+	newsWorld := linksFilter(rt, `.*?/news/world/.*`)
+	newsChina := linksFilter(rt, `.*?/news/china/.*`)
+	realtimeWorld := linksFilter(rt, `.*?/realtime/world/.*`)
+	realtimeChina := linksFilter(rt, `.*?/realtime/china/.*`)
+	rt = append(append(append(newsWorld, newsChina...), realtimeWorld...), realtimeChina...)
 	return rt, nil
 }
 
@@ -52,7 +55,7 @@ func getLinks(rawurl string) ([]string, error) {
 		return nil, err
 	}
 	if links, err := exhtml.ExtractLinks(u.String()); err != nil {
-		return nil, errors.WithMessagef(err, "[%s] cannot extract links from ",
+		return nil, errors.WithMessagef(err, "[%s] cannot extract links from %s",
 			configs.Data.MS.Title, rawurl)
 	} else {
 		return gears.StrSliceDeDupl(links), nil
@@ -72,7 +75,7 @@ func kickOutLinksMatchPath(links *[]string, path string) {
 	*links = tmp
 }
 
-// TODO: use point to impletement LinksFilter
+// TODO: use point to impletement linksFilter
 // linksFilter is support for SetLinks method
 func linksFilter(links []string, regex string) []string {
 	flinks := []string{}

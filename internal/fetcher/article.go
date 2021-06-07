@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -108,21 +109,31 @@ func (a *Article) fetchArticle(rawurl string) (*Article, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	a.Id = fmt.Sprintf("%x", md5.Sum([]byte(rawurl)))
+
 	a.Title, err = a.fetchTitle()
 	if err != nil {
 		return nil, err
 	}
+
 	a.UpdateTime, err = a.fetchUpdateTime()
 	if err != nil {
 		return nil, err
 	}
+
 	// filter work
 	if a, err = a.filter(3); errors.Is(err, ErrTimeOverDays) {
 		return nil, err
 	}
+
 	// content should be the last step to fetch
 	a.Content, err = a.fetchContent()
+	if err != nil {
+		return nil, err
+	}
+
+	a.Content, err = a.fmtContent(a.Content)
 	if err != nil {
 		return nil, err
 	}
@@ -136,26 +147,19 @@ func (a *Article) fetchTitle() (string, error) {
 		return "", fmt.Errorf("[%s] getTitle error, there is no element <title>", configs.Data.MS.Title)
 	}
 	title := n[0].FirstChild.Data
-	title = strings.ReplaceAll(title, " - BBC News 中文", "")
-	title = strings.TrimSpace(title)
+	rp := strings.NewReplacer(" | 联合早报网", "", " | 早报", "")
+	title = strings.TrimSpace(rp.Replace(title))
 	gears.ReplaceIllegalChar(&title)
 	return title, nil
 }
 
 func (a *Article) fetchUpdateTime() (*timestamppb.Timestamp, error) {
-	metas := exhtml.MetasByName(a.doc, "article:modified_time")
-	cs := []string{}
-	for _, meta := range metas {
-		for _, a := range meta.Attr {
-			if a.Key == "content" {
-				cs = append(cs, a.Val)
-			}
-		}
+	if a.raw == nil {
+		return nil, errors.Errorf("[%s] fetchUpdateTime: raw is nil: %s", configs.Data.MS.Title, a.U.String())
 	}
-	if len(cs) <= 0 {
-		return nil, fmt.Errorf("[%s] setData got nothing.", configs.Data.MS.Title)
-	}
-	t, err := time.Parse(time.RFC3339, cs[0])
+	re := regexp.MustCompile(`"datePublished": "(.*?)",`)
+	rs := re.FindAllSubmatch(a.raw, -1)[0]
+	t, err := time.Parse(time.RFC3339, string(rs[1]))
 	if err != nil {
 		return nil, err
 	}
@@ -168,8 +172,10 @@ func shanghai(t time.Time) time.Time {
 }
 
 var ErrTimeOverDays error = errors.New("article update time out of range")
+var ErrSameArticleExist error = errors.New("article title exist")
 
 // filter work for ignore articles by conditions
+// TODO: filter redundancy articles by title
 func (a *Article) filter(days int) (*Article, error) {
 	// if article time out of days, return nil and `ErrTimeOverDays`
 	// param days means fetch news during days from befor now.
@@ -184,33 +190,48 @@ func (a *Article) filter(days int) (*Article, error) {
 	if !during(days, a.UpdateTime) {
 		return nil, ErrTimeOverDays
 	}
+
 	return a, nil
 }
 
 func (a *Article) fetchContent() (string, error) {
+	if a.doc == nil {
+		return "", errors.Errorf("[%s] fetchContent: doc is nil: %s", configs.Data.MS.Title, a.U.String())
+	}
 	body := ""
 	// Fetch content nodes
-	nodes := exhtml.ElementsByTag(a.doc, "main")
+	nodes := exhtml.ElementsByTagAndId(a.doc, "article", "article-body")
 	if len(nodes) == 0 {
-		return "", fmt.Errorf("[%s] ElementsByTag match nothing from: %s",
-			configs.Data.MS.Title, a.U.String())
+		nodes = exhtml.ElementsByTagAndClass(a.doc, "div", "article-content-rawhtml")
 	}
-	articleDoc := nodes[0]
-	plist := exhtml.ElementsByTag(articleDoc, "h2", "p")
+	if len(nodes) == 0 {
+		nodes = exhtml.ElementsByTagAndClass(a.doc, "div", "article-content-container")
+	}
+	if len(nodes) == 0 {
+		return "", errors.Errorf("[%s] no content extract from %s", configs.Data.MS.Title, a.U.String())
+	}
+	plist := exhtml.ElementsByTag(nodes[0], "p")
 	for _, v := range plist {
-		if v.FirstChild != nil {
-			if v.Parent.FirstChild.Data == "h2" {
-				body += fmt.Sprintf("\n**%s**  \n", v.FirstChild.Data)
-			} else if v.FirstChild.Data == "b" {
-				body += fmt.Sprintf("\n**%s**  \n", v.FirstChild.FirstChild.Data)
-			} else {
-				body += v.FirstChild.Data + "  \n"
+		if v.FirstChild == nil {
+			continue
+		} else if v.FirstChild.FirstChild != nil &&
+			v.FirstChild.Data == "strong" {
+			a := exhtml.ElementsByTag(v, "span")
+			for _, aa := range a {
+				body += aa.FirstChild.Data
 			}
+			body += "  \n"
+		} else {
+			body += v.FirstChild.Data + "  \n"
 		}
 	}
-
-	// Format content
 	body = strings.ReplaceAll(body, "span  \n", "")
+
+	return body, nil
+}
+
+func (a *Article) fmtContent(body string) (string, error) {
+	var err error
 	title := "# " + a.Title + "\n\n"
 	lastupdate := shanghai(a.UpdateTime.AsTime()).Format("LastUpdate: [02.01] [1504H]")
 	webTitle := fmt.Sprintf(" @ [%s](/list/?v=%[1]s): [%[2]s](http://%[2]s)", a.WebsiteTitle, a.WebsiteDomain)
