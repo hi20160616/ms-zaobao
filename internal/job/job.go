@@ -11,6 +11,14 @@ import (
 )
 
 func Crawl(ctx context.Context) error {
+	f := func() {
+		if err := fetcher.Fetch(); err != nil {
+			if !errors.Is(err, fetcher.ErrTimeOverDays) {
+				log.Printf("%#v", err)
+			}
+		}
+	}
+	f() // fetch init while start up
 	t, err := time.ParseDuration(configs.Data.MS.Heartbeat)
 	if err != nil {
 		return err
@@ -18,11 +26,7 @@ func Crawl(ctx context.Context) error {
 	for {
 		select {
 		case <-time.Tick(t):
-			if err := fetcher.Fetch(); err != nil {
-				if !errors.Is(err, fetcher.ErrTimeOverDays) {
-					log.Printf("%#v", err)
-				}
-			}
+			f()
 		case <-ctx.Done():
 			return ctx.Err()
 		}
