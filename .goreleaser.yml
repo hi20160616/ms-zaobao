@@ -15,14 +15,6 @@ builds:
       - linux
       - windows
       - darwin
-    ignore:
-      - goos: darwin
-        goarch: 386
-      - goos: linux
-        goarch: arm
-        goarm: 7
-      - goos: mips64
-        gomips: hardfloat
 archives:
   -
     files:
