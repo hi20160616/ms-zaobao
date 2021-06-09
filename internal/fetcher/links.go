@@ -63,16 +63,16 @@ func getLinks(rawurl string) ([]string, error) {
 }
 
 // kickOutLinksMatchPath will kick out the links match the path,
-func kickOutLinksMatchPath(links *[]string, path string) {
+func kickOutLinksMatchPath(links []string, path string) []string {
 	tmp := []string{}
 	// path = "/" + url.QueryEscape(path) + "/"
 	// path = url.QueryEscape(path)
-	for _, link := range *links {
+	for _, link := range links {
 		if !strings.Contains(link, path) {
 			tmp = append(tmp, link)
 		}
 	}
-	*links = tmp
+	return tmp
 }
 
 // TODO: use point to impletement linksFilter
