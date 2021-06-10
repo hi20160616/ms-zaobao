@@ -174,9 +174,6 @@ func shanghai(t time.Time) time.Time {
 	return t.In(loc)
 }
 
-var ErrTimeOverDays error = errors.New("article update time out of range")
-var ErrSameArticleExist error = errors.New("article title exist")
-
 func (a *Article) fetchContent() (string, error) {
 	if a.doc == nil {
 		return "", errors.Errorf("[%s] fetchContent: doc is nil: %s", configs.Data.MS.Title, a.U.String())
