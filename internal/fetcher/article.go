@@ -30,15 +30,6 @@ type Article struct {
 	doc           *html.Node
 }
 
-var timeout = func() time.Duration {
-	t, err := time.ParseDuration(configs.Data.MS.Timeout)
-	if err != nil {
-		log.Printf("[%s] timeout init error: %v", configs.Data.MS.Title, err)
-		return time.Duration(1 * time.Minute)
-	}
-	return t
-}()
-
 func NewArticle() *Article {
 	return &Article{
 		WebsiteDomain: configs.Data.MS.Domain,
@@ -97,6 +88,23 @@ func (a *Article) Search(keyword ...string) ([]*Article, error) {
 	return as2, nil
 }
 
+type ByUpdateTime []*Article
+
+func (u ByUpdateTime) Len() int      { return len(u) }
+func (u ByUpdateTime) Swap(i, j int) { u[i], u[j] = u[j], u[i] }
+func (u ByUpdateTime) Less(i, j int) bool {
+	return u[i].UpdateTime.AsTime().Before(u[j].UpdateTime.AsTime())
+}
+
+var timeout = func() time.Duration {
+	t, err := time.ParseDuration(configs.Data.MS.Timeout)
+	if err != nil {
+		log.Printf("[%s] timeout init error: %v", configs.Data.MS.Title, err)
+		return time.Duration(1 * time.Minute)
+	}
+	return t
+}()
+
 // fetchArticle fetch article by rawurl
 func (a *Article) fetchArticle(rawurl string) (*Article, error) {
 	var err error
@@ -119,11 +127,6 @@ func (a *Article) fetchArticle(rawurl string) (*Article, error) {
 
 	a.UpdateTime, err = a.fetchUpdateTime()
 	if err != nil {
-		return nil, err
-	}
-
-	// filter work
-	if a, err = a.filter(3); errors.Is(err, ErrTimeOverDays) {
 		return nil, err
 	}
 
@@ -174,26 +177,6 @@ func shanghai(t time.Time) time.Time {
 var ErrTimeOverDays error = errors.New("article update time out of range")
 var ErrSameArticleExist error = errors.New("article title exist")
 
-// filter work for ignore articles by conditions
-// TODO: filter redundancy articles by title
-func (a *Article) filter(days int) (*Article, error) {
-	// if article time out of days, return nil and `ErrTimeOverDays`
-	// param days means fetch news during days from befor now.
-	during := func(days int, ts *timestamppb.Timestamp) bool {
-		t := shanghai(ts.AsTime())
-		if time.Now().Day()-t.Day() <= days {
-			return true
-		}
-		return false
-	}
-	// if during return false rt nil, and error as ErrTimeOverDays
-	if !during(days, a.UpdateTime) {
-		return nil, ErrTimeOverDays
-	}
-
-	return a, nil
-}
-
 func (a *Article) fetchContent() (string, error) {
 	if a.doc == nil {
 		return "", errors.Errorf("[%s] fetchContent: doc is nil: %s", configs.Data.MS.Title, a.U.String())
@@ -233,7 +216,7 @@ func (a *Article) fetchContent() (string, error) {
 func (a *Article) fmtContent(body string) (string, error) {
 	var err error
 	title := "# " + a.Title + "\n\n"
-	lastupdate := shanghai(a.UpdateTime.AsTime()).Format("LastUpdate: [02.01] [1504H]")
+	lastupdate := shanghai(a.UpdateTime.AsTime()).Format("LastUpdate: 2006-01-02 15:04:05 +07:00")
 	webTitle := fmt.Sprintf(" @ [%s](/list/?v=%[1]s): [%[2]s](http://%[2]s)", a.WebsiteTitle, a.WebsiteDomain)
 	u, err := url.QueryUnescape(a.U.String())
 	if err != nil {
