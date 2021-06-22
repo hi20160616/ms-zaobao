@@ -147,7 +147,8 @@ func (a *Article) fetchArticle(rawurl string) (*Article, error) {
 func (a *Article) fetchTitle() (string, error) {
 	n := exhtml.ElementsByTag(a.doc, "title")
 	if n == nil {
-		return "", fmt.Errorf("[%s] getTitle error, there is no element <title>", configs.Data.MS.Title)
+		return "", fmt.Errorf("[%s] getTitle error, there is no element <title>",
+			configs.Data.MS.Title)
 	}
 	title := n[0].FirstChild.Data
 	rp := strings.NewReplacer(" | 联合早报网", "", " | 早报", "")
@@ -158,11 +159,20 @@ func (a *Article) fetchTitle() (string, error) {
 
 func (a *Article) fetchUpdateTime() (*timestamppb.Timestamp, error) {
 	if a.raw == nil {
-		return nil, errors.Errorf("[%s] fetchUpdateTime: raw is nil: %s", configs.Data.MS.Title, a.U.String())
+		return nil, errors.Errorf("[%s] fetchUpdateTime: raw is nil: %s",
+			configs.Data.MS.Title, a.U.String())
 	}
 	re := regexp.MustCompile(`"datePublished": "(.*?)",`)
-	rs := re.FindAllSubmatch(a.raw, -1)[0]
-	t, err := time.Parse(time.RFC3339, string(rs[1]))
+	rs := re.FindAllSubmatch(a.raw, -1)
+	if rs == nil || len(rs) <= 0 {
+		return nil, fmt.Errorf("[%s] fetchUpdateTime: no datePublished matched: %s",
+			configs.Data.MS.Title, a.U.String())
+	}
+	if len(rs[0]) <= 1 {
+		return nil, fmt.Errorf("[%s] fetchUpdateTime: no datePublished sub-matched: %s",
+			configs.Data.MS.Title, a.U.String())
+	}
+	t, err := time.Parse(time.RFC3339, string(rs[0][1]))
 	if err != nil {
 		return nil, err
 	}

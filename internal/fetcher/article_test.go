@@ -17,7 +17,7 @@ func TestFetchArticle(t *testing.T) {
 		err error
 	}{
 		{"https://www.zaobao.com/realtime/world/story20210602-1151196", ErrTimeOverDays},
-		{"https://www.zaobao.com/realtime/world/story20210607-1153241", nil},
+		{"https://www.zaobao.com/realtime/china/story20210621-1159132", nil},
 	}
 	for _, tc := range tests {
 		a := NewArticle()
@@ -76,8 +76,8 @@ func TestFetchUpdateTime(t *testing.T) {
 		want string
 	}{
 		{
-			"https://www.zaobao.com/realtime/world/story20210602-1151196",
-			"2021-06-02 15:44:33 +0800 UTC",
+			"https://www.zaobao.com/realtime/china/story20210621-1159132",
+			"2021-06-21 19:15:15 +0800 UTC",
 		},
 		{
 			"https://www.zaobao.com/realtime/world/story20210607-1153241",
