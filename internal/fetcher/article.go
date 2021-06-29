@@ -116,7 +116,7 @@ func (a *Article) fetchArticle(rawurl string) (*Article, error) {
 		return nil, err
 	}
 	// Dail
-	a.raw, a.doc, err = exhtml.GetRawAndDoc(a.U, timeout)
+	a.raw, a.doc, err = exhtml.GetRawAndDoc(a.U, 1*time.Minute)
 	if err != nil {
 		return nil, err
 	}
