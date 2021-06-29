@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -162,21 +163,23 @@ func (a *Article) fetchUpdateTime() (*timestamppb.Timestamp, error) {
 		return nil, errors.Errorf("[%s] fetchUpdateTime: raw is nil: %s",
 			configs.Data.MS.Title, a.U.String())
 	}
+
 	re := regexp.MustCompile(`"datePublished": "(.*?)",`)
 	rs := re.FindAllSubmatch(a.raw, -1)
 	if rs == nil || len(rs) <= 0 {
-		return nil, fmt.Errorf("[%s] fetchUpdateTime: no datePublished matched: %s",
+		// Just print matched nil to Stderr, instead of return the err
+		// so, the news will fetch although datetime err
+		fmt.Fprintf(os.Stderr, "[%s] fetchUpdateTime: no datePublished matched: %s",
 			configs.Data.MS.Title, a.U.String())
+		return timestamppb.Now(), nil
 	}
 	if len(rs[0]) <= 1 {
-		return nil, fmt.Errorf("[%s] fetchUpdateTime: no datePublished sub-matched: %s",
+		fmt.Fprintf(os.Stderr, "[%s] fetchUpdateTime: no datePublished sub-matched: %s",
 			configs.Data.MS.Title, a.U.String())
+		return timestamppb.Now(), nil
 	}
 	t, err := time.Parse(time.RFC3339, string(rs[0][1]))
-	if err != nil {
-		return nil, err
-	}
-	return timestamppb.New(t), nil
+	return timestamppb.New(t), err
 }
 
 func shanghai(t time.Time) time.Time {
