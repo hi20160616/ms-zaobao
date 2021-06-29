@@ -53,7 +53,7 @@ func fetch(ctx context.Context) (as []*Article, err error) {
 			// ignore redundant articles
 			exist := false
 			for _, _a := range as {
-				if a.Title == _a.Title || a.Id == _a.Id {
+				if a.Title == _a.Title {
 					exist = true
 				}
 			}
