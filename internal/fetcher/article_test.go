@@ -16,8 +16,10 @@ func TestFetchArticle(t *testing.T) {
 		url string
 		err error
 	}{
+		{"https://www.zaobao.com/realtime/china/story20210627-1161676", ErrTimeOverDays},
+		{"https://www.zaobao.com/realtime/china/story20210623-1159750", ErrTimeOverDays},
 		{"https://www.zaobao.com/realtime/china/story20210617-1157196", ErrTimeOverDays},
-		{"https://www.zaobao.com/realtime/china/story20210621-1159132", nil},
+		{"https://www.zaobao.com/realtime/china/story20210621-1159132", ErrTimeOverDays},
 	}
 	for _, tc := range tests {
 		a := NewArticle()
@@ -39,6 +41,8 @@ func TestFetchTitle(t *testing.T) {
 		url   string
 		title string
 	}{
+		{"https://www.zaobao.com/realtime/china/story20210627-1161676", "贺一诚将出席中共百年党庆"},
+		{"https://www.zaobao.com/realtime/china/story20210623-1159750", "加拿大代表逾40国要求中国允许联合国官员进入新疆"},
 		{"https://www.zaobao.com/realtime/world/story20210602-1151196", "马国男子腰缠巨蟒骑摩托车送往放生引热议"},
 		{"https://www.zaobao.com/realtime/world/story20210607-1153241", "以色列将于14日前投票批准新政府"},
 	}

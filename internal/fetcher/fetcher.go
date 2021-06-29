@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"sort"
-	"time"
 
 	"github.com/hi20160616/ms-zaobao/configs"
 )
@@ -22,11 +21,6 @@ func Fetch() error {
 	}
 
 	as, err = merge(as)
-	if err != nil {
-		return err
-	}
-
-	as, err = filter(as)
 	if err != nil {
 		return err
 	}
@@ -50,17 +44,16 @@ func fetch(ctx context.Context) (as []*Article, err error) {
 			a := NewArticle()
 			a, err = a.fetchArticle(link)
 			if err != nil {
-				if !errors.Is(err, ErrTimeOverDays) {
-					log.Printf("[%s] fetch error: %v, link: %s",
-						configs.Data.MS.Title, err, link)
+				if errors.Is(err, ErrTimeOverDays) {
+					continue
 				}
-				err = nil
-				continue
+				log.Printf("[%s] fetch error: %v, link: %s",
+					configs.Data.MS.Title, err, link)
 			}
 			// ignore redundant articles
 			exist := false
 			for _, _a := range as {
-				if a.Title == _a.Title {
+				if a.Title == _a.Title || a.Id == _a.Id {
 					exist = true
 				}
 			}
@@ -83,27 +76,4 @@ func merge(as []*Article) ([]*Article, error) {
 	}
 	as = append(as, dbAs...)
 	return as, nil
-}
-
-var ErrTimeOverDays error = errors.New("article update time out of range")
-
-func filter(as []*Article) ([]*Article, error) {
-	rt := []*Article{}
-	for _, a := range as {
-		if a.UpdateTime.AsTime().
-			Before(time.Now().AddDate(0, 0, -3)) {
-			// before 3 days, so ignore
-			continue
-		}
-		exist := false
-		for _, _a := range rt {
-			if a.Id == _a.Id {
-				exist = true
-			}
-		}
-		if !exist {
-			rt = append(rt, a)
-		}
-	}
-	return rt, nil
 }

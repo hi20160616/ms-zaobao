@@ -31,6 +31,8 @@ type Article struct {
 	doc           *html.Node
 }
 
+var ErrTimeOverDays error = errors.New("article update time out of range")
+
 func NewArticle() *Article {
 	return &Article{
 		WebsiteDomain: configs.Data.MS.Domain,
@@ -179,6 +181,9 @@ func (a *Article) fetchUpdateTime() (*timestamppb.Timestamp, error) {
 		return timestamppb.Now(), nil
 	}
 	t, err := time.Parse(time.RFC3339, string(rs[0][1]))
+	if t.Before(time.Now().AddDate(0, 0, -3)) {
+		return nil, ErrTimeOverDays
+	}
 	return timestamppb.New(t), err
 }
 
