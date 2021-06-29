@@ -45,6 +45,7 @@ func fetch(ctx context.Context) (as []*Article, err error) {
 			a, err = a.fetchArticle(link)
 			if err != nil {
 				if errors.Is(err, ErrTimeOverDays) {
+					err = nil
 					continue
 				}
 				log.Printf("[%s] fetch error: %v, link: %s",
