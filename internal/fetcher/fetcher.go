@@ -44,17 +44,17 @@ func fetch(ctx context.Context) (as []*Article, err error) {
 			a := NewArticle()
 			a, err = a.fetchArticle(link)
 			if err != nil {
-				if errors.Is(err, ErrTimeOverDays) {
-					err = nil
-					continue
+				if !errors.Is(err, ErrTimeOverDays) {
+					log.Printf("[%s] fetch error: %v, link: %s",
+						configs.Data.MS.Title, err, link)
 				}
-				log.Printf("[%s] fetch error: %v, link: %s",
-					configs.Data.MS.Title, err, link)
+				err = nil
+				continue
 			}
 			// ignore redundant articles
 			exist := false
 			for _, _a := range as {
-				if a.Title == _a.Title {
+				if a.Title == _a.Title || a.Id == _a.Id {
 					exist = true
 				}
 			}
