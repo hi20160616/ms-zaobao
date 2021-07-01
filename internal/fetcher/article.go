@@ -118,7 +118,17 @@ func (a *Article) fetchArticle(rawurl string) (*Article, error) {
 	// Dail
 	a.raw, a.doc, err = exhtml.GetRawAndDoc(a.U, 1*time.Minute)
 	if err != nil {
-		return nil, err
+		if strings.Contains(err.Error(), "invalid header") {
+			a.Title = a.U.Path
+			a.UpdateTime = timestamppb.Now()
+			a.Content, err = a.fmtContent("")
+			if err != nil {
+				return nil, err
+			}
+			return a, nil
+		} else {
+			return nil, err
+		}
 	}
 
 	a.Id = fmt.Sprintf("%x", md5.Sum([]byte(rawurl)))
