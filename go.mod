@@ -3,7 +3,7 @@ module github.com/hi20160616/ms-zaobao
 go 1.16
 
 require (
-	github.com/hi20160616/exhtml v0.0.0-20210629094924-7f1e6c88ee64
+	github.com/hi20160616/exhtml v0.0.0-20210701125727-0167e2b85077
 	github.com/hi20160616/fetchnews-api v0.0.0-20210527092959-c7f6971039c7
 	github.com/hi20160616/gears v0.0.0-20201201083715-3454c2a9d4d7
 	github.com/pkg/errors v0.9.1
