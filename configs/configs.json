@@ -1,6 +1,6 @@
 {
-  "debug":true,
+  "debug":false,
   "verbose":false,
-  "gist": "https://gist.github.com/hi20160616/bfcb9f8521d17aa4f65cf14b79550e23/raw/configs1.json",
+  "gist":"https://gist.githubusercontent.com/hi20160616/592a546c2131d792d09f41dbedfb1a58/raw/configs2.json",
   "dbpath":"db"
 }

@@ -12,11 +12,11 @@ import (
 )
 
 // Fetch fetch and storage all stuffs to `db/articles.json`
-func Fetch() error {
+func Fetch(ctx context.Context) error {
 	defer log.Printf("[%s] Fetch Done.", configs.Data.MS["zaobao"].Title)
 	log.Printf("[%s] Fetching ...", configs.Data.MS["zaobao"].Title)
 
-	as, err := fetch(context.Background())
+	as, err := fetch(ctx)
 	if err != nil {
 		return err
 	}

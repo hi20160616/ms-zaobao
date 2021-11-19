@@ -11,14 +11,14 @@ import (
 )
 
 func Crawl(ctx context.Context) error {
-	f := func() {
-		if err := fetcher.Fetch(); err != nil {
+	f := func(ctx context.Context) {
+		if err := fetcher.Fetch(ctx); err != nil {
 			if !errors.Is(err, fetcher.ErrTimeOverDays) {
 				log.Printf("%#v", err)
 			}
 		}
 	}
-	f() // fetch init while start up
+	f(ctx) // fetch init while start up
 	t, err := time.ParseDuration(configs.Data.MS["zaobao"].Heartbeat)
 	if err != nil {
 		return err
@@ -26,7 +26,7 @@ func Crawl(ctx context.Context) error {
 	for {
 		select {
 		case <-time.Tick(t):
-			f()
+			f(ctx)
 		case <-ctx.Done():
 			return ctx.Err()
 		}
