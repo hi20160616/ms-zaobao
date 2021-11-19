@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/url"
-	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -177,23 +176,30 @@ func (a *Article) fetchUpdateTime() (*timestamppb.Timestamp, error) {
 			configs.Data.MS["zaobao"].Title, a.U.String())
 	}
 
-	re := regexp.MustCompile(`"datePublished": "(.*?)",`)
-	rs := re.FindAllSubmatch(a.raw, -1)
-	if rs == nil || len(rs) <= 0 {
-		// Just print matched nil to Stderr, instead of return the err
-		// so, the news will fetch although datetime err
-		fmt.Fprintf(os.Stderr, "[%s] fetchUpdateTime: no datePublished matched: %s",
+	t := time.Now() // if no time fetched, return current time
+	var err error
+
+	doc := exhtml.ElementsByTagAndType(a.doc, "script", "application/ld+json")
+	if doc == nil {
+		return nil, fmt.Errorf("[%s] fetchUpdateTime: cannot get target nodes: %s",
 			configs.Data.MS["zaobao"].Title, a.U.String())
-		return timestamppb.Now(), nil
 	}
-	if len(rs[0]) <= 1 {
-		fmt.Fprintf(os.Stderr, "[%s] fetchUpdateTime: no datePublished sub-matched: %s",
-			configs.Data.MS["zaobao"].Title, a.U.String())
-		return timestamppb.Now(), nil
+	for _, d := range doc {
+		if d.FirstChild != nil && d.FirstChild.Type == html.TextNode {
+			re := regexp.MustCompile(`(?m)"datePublished":\s*?"([^"]*?)",`)
+			rs := re.FindStringSubmatch(d.FirstChild.Data)
+			if len(rs) == 2 {
+				t, err = time.ParseInLocation(time.RFC3339,
+					rs[1], time.FixedZone("UTC", +8*60*60))
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
 	}
-	t, err := time.Parse(time.RFC3339, string(rs[0][1]))
+
 	if t.Before(time.Now().AddDate(0, 0, -3)) {
-		return nil, ErrTimeOverDays
+		return timestamppb.New(t), ErrTimeOverDays
 	}
 	return timestamppb.New(t), err
 }
@@ -210,12 +216,6 @@ func (a *Article) fetchContent() (string, error) {
 	body := ""
 	// Fetch content nodes
 	nodes := exhtml.ElementsByTagAndId(a.doc, "article", "article-body")
-	if len(nodes) == 0 {
-		nodes = exhtml.ElementsByTagAndClass(a.doc, "div", "article-content-rawhtml")
-	}
-	if len(nodes) == 0 {
-		nodes = exhtml.ElementsByTagAndClass(a.doc, "div", "article-content-container")
-	}
 	if len(nodes) == 0 {
 		return "", errors.Errorf("[%s] no content extract from %s", configs.Data.MS["zaobao"].Title, a.U.String())
 	}

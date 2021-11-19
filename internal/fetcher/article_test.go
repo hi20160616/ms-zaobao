@@ -10,41 +10,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-// pass test
-func TestFetchArticle(t *testing.T) {
-	tests := []struct {
-		url string
-		err error
-	}{
-		{"https://www.zaobao.com/realtime/china/story20210627-1161676", ErrTimeOverDays},
-		{"https://www.zaobao.com/realtime/china/story20210623-1159750", ErrTimeOverDays},
-		{"https://www.zaobao.com/realtime/china/story20210617-1157196", ErrTimeOverDays},
-		{"https://www.zaobao.com/realtime/china/story20210621-1159132", ErrTimeOverDays},
-	}
-	for _, tc := range tests {
-		a := NewArticle()
-		a, err := a.fetchArticle(tc.url)
-		if err != nil {
-			if !errors.Is(err, ErrTimeOverDays) {
-				t.Error(err)
-			} else {
-				fmt.Println("ignore old news pass test: ", tc.url)
-			}
-		} else {
-			fmt.Println("pass test: ", a.Content)
-		}
-	}
-}
-
 func TestFetchTitle(t *testing.T) {
 	tests := []struct {
 		url   string
 		title string
 	}{
 		{"https://www.zaobao.com/realtime/china/story20210627-1161676", "贺一诚将出席中共百年党庆"},
-		{"https://www.zaobao.com/realtime/china/story20210623-1159750", "加拿大代表逾40国要求中国允许联合国官员进入新疆"},
-		{"https://www.zaobao.com/realtime/world/story20210602-1151196", "马国男子腰缠巨蟒骑摩托车送往放生引热议"},
-		{"https://www.zaobao.com/realtime/world/story20210607-1153241", "以色列将于14日前投票批准新政府"},
+		{"https://www.zaobao.com/realtime/world/story20211118-1214802", "下午察：不要动不动就全员检测核酸？"},
 	}
 	for _, tc := range tests {
 		a := NewArticle()
@@ -79,14 +51,8 @@ func TestFetchUpdateTime(t *testing.T) {
 		url  string
 		want string
 	}{
-		{
-			"https://www.zaobao.com/realtime/china/story20210621-1159132",
-			"2021-06-21 19:15:15 +0800 UTC",
-		},
-		{
-			"https://www.zaobao.com/realtime/china/story20210615-1156563",
-			"2021-06-15 19:04:20 +0800 UTC",
-		},
+		{"https://www.zaobao.com/realtime/china/story20210627-1161676", "2021-11-18 17:28:39 +0800 UTC"},
+		{"https://www.zaobao.com/realtime/world/story20211118-1214802", "2021-11-18 17:28:39 +0800 UTC"},
 	}
 	var err error
 	if err := configs.Reset("../../"); err != nil {
@@ -106,7 +72,9 @@ func TestFetchUpdateTime(t *testing.T) {
 		}
 		tt, err := a.fetchUpdateTime()
 		if err != nil {
-			t.Error(err)
+			if !errors.Is(err, ErrTimeOverDays) {
+				t.Error(err)
+			}
 		} else {
 			ttt := tt.AsTime()
 			got := shanghai(ttt)
@@ -122,19 +90,10 @@ func TestFetchContent(t *testing.T) {
 		url  string
 		want string
 	}{
-		{
-			"https://www.zaobao.com/realtime/world/story20210602-1151196",
-			"2021-06-02 15:44:33 +0800 UTC",
-		},
-		{
-			"https://www.zaobao.com/realtime/world/story20210607-1153241",
-			"2021-06-07 21:38:53 +0800 UTC",
-		},
+		{"https://www.zaobao.com/realtime/world/story20211118-1214802", ""},
+		{"https://www.zaobao.com.sg/news/china/story20211117-1214162", ""},
 	}
 	var err error
-	if err := configs.Reset("../../"); err != nil {
-		t.Error(err)
-	}
 
 	for _, tc := range tests {
 		a := NewArticle()
@@ -152,5 +111,29 @@ func TestFetchContent(t *testing.T) {
 			t.Error(err)
 		}
 		fmt.Println(c)
+	}
+}
+
+func TestFetchArticle(t *testing.T) {
+	tests := []struct {
+		url string
+		err error
+	}{
+		{"https://www.zaobao.com/realtime/china/story20210627-1161676", ErrTimeOverDays},
+		{"https://www.zaobao.com/realtime/world/story20211118-1214802", nil},
+		{"https://www.zaobao.com.sg/news/china/story20211117-1214162", nil},
+	}
+	for _, tc := range tests {
+		a := NewArticle()
+		a, err := a.fetchArticle(tc.url)
+		if err != nil {
+			if !errors.Is(err, ErrTimeOverDays) {
+				t.Error(err)
+			} else {
+				fmt.Println("ignore old news pass test: ", tc.url)
+			}
+		} else {
+			fmt.Println("pass test: ", a.Content)
+		}
 	}
 }

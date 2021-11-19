@@ -1,5 +1,5 @@
 {
-  "debug":false,
+  "debug":true,
   "verbose":false,
   "gist": "https://gist.github.com/hi20160616/bfcb9f8521d17aa4f65cf14b79550e23/raw/configs1.json",
   "dbpath":"db"
