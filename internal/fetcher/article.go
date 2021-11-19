@@ -241,7 +241,7 @@ func (a *Article) fetchContent() (string, error) {
 				"node render to bytes fail: %s", a.U.String())
 		}
 		re := regexp.MustCompile(`(?m)<div.*?>([^^]*?)</div>`)
-		x := re.ReplaceAllString(buf.String(), "${1}  \n")
+		x := re.ReplaceAllString(buf.String(), "${1}")
 
 		re = regexp.MustCompile(`(?m)<script.*?>([^^]*?)</script>`)
 		x = re.ReplaceAllString(x, "")
@@ -250,7 +250,7 @@ func (a *Article) fetchContent() (string, error) {
 		re = regexp.MustCompile(`(?m)<p.*?>(.*?)</p>`)
 		x = re.ReplaceAllString(x, "${1}")
 		re = regexp.MustCompile(`(?m)<h1>(?P<h1>.*?)</h1>`)
-		x = re.ReplaceAllString(x, "## ${h1}")
+		x = re.ReplaceAllString(x, "# ${h1}")
 		re = regexp.MustCompile(`(?m)<h2>(?P<h2>.*?)</h2>`)
 		x = re.ReplaceAllString(x, "## ${h2}")
 		re = regexp.MustCompile(`(?m)<h3>(?P<h3>.*?)</h3>`)
@@ -267,7 +267,7 @@ func (a *Article) fetchContent() (string, error) {
 		x = re.ReplaceAllString(x, "[${x}](${href})")
 		re = regexp.MustCompile(`(?m)<img .*?>`)
 		x = re.ReplaceAllString(x, "")
-		repl := strings.NewReplacer("「", "“", "」", "”", "</div>", "", " ", "", "　", "")
+		repl := strings.NewReplacer("「", "“", "」", "”", "</div>", "", " ", "", "　", "", "\n\n", "")
 		x = repl.Replace(x)
 		x = strings.TrimSpace(x)
 		if x != "" {
